@@ -27,6 +27,7 @@ docs/
 ```text
 screenshots/
 |-- screenshots.md
+|-- github_actions_secrets.png
 |-- pipeline builds successfully.png
 |-- cloudformation_stack_completed.png
 |-- dashboard_grafana.png
@@ -36,7 +37,8 @@ screenshots/
 `-- sns_subscription confirmed.png
 ```
 
-- `screenshot.md`: root-level evidence index for assessment review.
+- `screenshots.md`: root-level evidence index for assessment review.
+- `screenshot.md`: compatibility pointer to the root-level screenshot evidence index.
 - `screenshots/screenshots.md`: screenshot gallery with embedded evidence images.
 - `screenshots/*.png`: deployment, Grafana, CloudWatch, SNS, and alerting evidence.
 

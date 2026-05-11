@@ -82,6 +82,7 @@ Detailed ownership notes are in [docs/file-structure.md](docs/file-structure.md)
 .
 |-- README.md
 |-- screenshot.md
+|-- screenshots.md
 |-- docs/
 |   |-- architecture.md
 |   |-- assessment-checklist.md
@@ -121,6 +122,7 @@ Detailed ownership notes are in [docs/file-structure.md](docs/file-structure.md)
 |   `-- validate-json.sh
 |-- screenshots/
 |   |-- screenshots.md
+|   |-- github_actions_secrets.png
 |   |-- pipeline builds successfully.png
 |   |-- cloudformation_stack_completed.png
 |   |-- dashboard_grafana.png
@@ -167,10 +169,11 @@ Detailed commands are in [docs/deployment-guide.md](docs/deployment-guide.md).
 
 ## Verified Deployment Evidence
 
-The project has a screenshot evidence index at [screenshot.md](screenshot.md), with the detailed gallery in [screenshots/screenshots.md](screenshots/screenshots.md).
+The project has a screenshot evidence index at [screenshots.md](screenshots.md), with the detailed gallery in [screenshots/screenshots.md](screenshots/screenshots.md).
 
 Captured evidence covers:
 
+- GitHub Actions variables/secrets configuration.
 - Successful GitHub Actions deployment.
 - CloudFormation stack creation and completion.
 - Amazon Managed Grafana workspace availability.

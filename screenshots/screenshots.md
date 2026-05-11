@@ -2,9 +2,11 @@
 
 Screenshot gallery for the AWS Managed Grafana observability platform.
 
-Root evidence index: [../screenshot.md](../screenshot.md)
+Root evidence index: [../screenshots.md](../screenshots.md)
 
 ## CI/CD
+
+![GitHub Actions variables and secrets](github_actions_secrets.png)
 
 ![GitHub Actions pipeline success](<pipeline builds successfully.png>)
 
