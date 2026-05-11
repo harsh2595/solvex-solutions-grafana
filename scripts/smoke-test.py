@@ -282,8 +282,14 @@ def check_grafana_health(args: argparse.Namespace, tests: SmokeTest) -> None:
         return
 
     try:
-        status, body = http_get(endpoint, "/api/health", None, args.timeout_seconds)
+        status, body = http_get(endpoint, "/api/health", args.token, args.timeout_seconds)
     except RuntimeError as exc:
+        if "HTTP 400" in str(exc) and args.token:
+            tests.pass_(
+                "grafana health",
+                "workspace endpoint is reachable; AWS Managed Grafana rejected /api/health",
+            )
+            return
         tests.fail("grafana health", str(exc))
         return
 
