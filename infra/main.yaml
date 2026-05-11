@@ -398,8 +398,15 @@ Resources:
               return response["serviceAccountToken"]["key"]
 
 
+          def normalize_endpoint(endpoint):
+              endpoint = endpoint.strip().rstrip("/")
+              if endpoint.startswith("http://") or endpoint.startswith("https://"):
+                  return endpoint
+              return f"https://{endpoint}"
+
+
           def grafana_post(endpoint, token, path, payload):
-              endpoint = endpoint.rstrip("/")
+              endpoint = normalize_endpoint(endpoint)
               url = f"{endpoint}{path}"
               body = json.dumps(payload).encode("utf-8")
               request = urllib.request.Request(

@@ -104,6 +104,32 @@ jobs:
               print(f"environment_name={parameters.get('EnvironmentName', 'dev')}", file=output)
           PY
 
+      - name: Check CloudFormation stack state
+        run: |
+          set +e
+          stack_status="$(
+            aws cloudformation describe-stacks \
+              --stack-name "$STACK_NAME" \
+              --region "$AWS_REGION" \
+              --query "Stacks[0].StackStatus" \
+              --output text 2>/dev/null
+          )"
+          describe_status=$?
+          set -e
+
+          if [[ "$describe_status" -ne 0 ]]; then
+            echo "Stack $STACK_NAME does not exist yet; continuing with create."
+            exit 0
+          fi
+
+          if [[ "$stack_status" == "ROLLBACK_COMPLETE" ]]; then
+            echo "Stack $STACK_NAME is ROLLBACK_COMPLETE and cannot be updated."
+            echo "Delete the failed stack in CloudFormation, then rerun this workflow."
+            exit 1
+          fi
+
+          echo "Stack $STACK_NAME status is $stack_status; continuing."
+
       - name: Deploy CloudFormation stack
         run: |
           aws cloudformation deploy \

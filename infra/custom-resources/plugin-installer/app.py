@@ -116,8 +116,15 @@ def create_token(
     return response["serviceAccountToken"]["key"]
 
 
+def normalize_endpoint(endpoint: str) -> str:
+    endpoint = endpoint.strip().rstrip("/")
+    if endpoint.startswith("http://") or endpoint.startswith("https://"):
+        return endpoint
+    return f"https://{endpoint}"
+
+
 def grafana_post(endpoint: str, token: str, path: str, payload: dict[str, Any]) -> int:
-    endpoint = endpoint.rstrip("/")
+    endpoint = normalize_endpoint(endpoint)
     body = json.dumps(payload).encode("utf-8")
     request = urllib.request.Request(
         f"{endpoint}{path}",
