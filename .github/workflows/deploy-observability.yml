@@ -47,10 +47,10 @@ jobs:
 
       - name: Check required GitHub variables
         env:
-          AWS_ROLE_ARN: ${{ vars.AWS_ROLE_ARN }}
+          AWS_ROLE_ARN: ${{ vars.AWS_ROLE_ARN || vars.aws_role_arn || secrets.AWS_ROLE_ARN }}
         run: |
           if [[ -z "$AWS_ROLE_ARN" ]]; then
-            echo "Missing GitHub repository variable AWS_ROLE_ARN."
+            echo "Missing GitHub repository variable aws_role_arn / AWS_ROLE_ARN, or secret AWS_ROLE_ARN."
             echo "Create an AWS IAM role trusted by GitHub OIDC, then set AWS_ROLE_ARN to that role ARN."
             exit 1
           fi
@@ -58,7 +58,7 @@ jobs:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+          role-to-assume: ${{ vars.AWS_ROLE_ARN || vars.aws_role_arn || secrets.AWS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Validate CloudFormation template
@@ -81,7 +81,7 @@ jobs:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+          role-to-assume: ${{ vars.AWS_ROLE_ARN || vars.aws_role_arn || secrets.AWS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Render CloudFormation parameter overrides
@@ -160,7 +160,7 @@ jobs:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+          role-to-assume: ${{ vars.AWS_ROLE_ARN || vars.aws_role_arn || secrets.AWS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Create short-lived Grafana service account token
