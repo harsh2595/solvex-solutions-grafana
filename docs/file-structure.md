@@ -22,6 +22,24 @@ docs/
 - `diagrams/architecture.mmd`: reusable Mermaid diagram source.
 - `runbooks/alert-response.md`: starter incident response runbook.
 
+## Screenshots
+
+```text
+screenshots/
+|-- screenshots.md
+|-- pipeline builds successfully.png
+|-- cloudformation_stack_completed.png
+|-- dashboard_grafana.png
+|-- workload health.png
+|-- contact point.png
+|-- notification policies.png
+`-- sns_subscription confirmed.png
+```
+
+- `screenshot.md`: root-level evidence index for assessment review.
+- `screenshots/screenshots.md`: screenshot gallery with embedded evidence images.
+- `screenshots/*.png`: deployment, Grafana, CloudWatch, SNS, and alerting evidence.
+
 ## Infrastructure
 
 ```text

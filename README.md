@@ -4,12 +4,24 @@ Runnable single-account AWS observability platform using **AWS Managed Grafana**
 
 The project is designed for the Grafana Engineer assessment:
 
-- Provision AWS Managed Grafanaa with IAM Identity Center SSO.
+- Provision AWS Managed Grafana with IAM Identity Center SSO.
 - Enable plugin administration and install approved plugins through a CloudFormation custom resource.
 - Build a CloudWatch observability baseline.
 - Deploy CloudWatch and Grafana dashboards.
 - Create Grafana-managed alerts that notify an SNS topic through notification templates.
 - Automate dashboard and alert deployment from GitHub Actions after the platform stack is created.
+
+## What This Deploys
+
+- **AWS Managed Grafana workspace** using IAM Identity Center authentication.
+- **Customer-managed Grafana workspace IAM role** with CloudWatch read access and SNS publish access.
+- **CloudWatch data source** in Grafana.
+- **Native CloudWatch dashboard** for account-level visibility.
+- **Grafana dashboards** for platform and workload health.
+- **Grafana alerting assets**: SNS contact point, notification templates, notification policies, and alert rule group.
+- **SNS topic** for alert delivery.
+- **Plugin installer custom resource** backed by Lambda for approved Grafana plugins.
+- **GitHub Actions pipeline** that validates, deploys, waits for the workspace, applies Grafana assets, and runs smoke tests.
 
 ## Architecture
 
@@ -69,6 +81,7 @@ Detailed ownership notes are in [docs/file-structure.md](docs/file-structure.md)
 ```text
 .
 |-- README.md
+|-- screenshot.md
 |-- docs/
 |   |-- architecture.md
 |   |-- assessment-checklist.md
@@ -106,6 +119,15 @@ Detailed ownership notes are in [docs/file-structure.md](docs/file-structure.md)
 |   |-- ensure-service-account-token.sh
 |   |-- smoke-test.py
 |   `-- validate-json.sh
+|-- screenshots/
+|   |-- screenshots.md
+|   |-- pipeline builds successfully.png
+|   |-- cloudformation_stack_completed.png
+|   |-- dashboard_grafana.png
+|   |-- workload health.png
+|   |-- contact point.png
+|   |-- notification policies.png
+|   `-- sns_subscription confirmed.png
 `-- .github/
     `-- workflows/
         |-- README.md
@@ -143,13 +165,38 @@ Detailed ownership notes are in [docs/file-structure.md](docs/file-structure.md)
 
 Detailed commands are in [docs/deployment-guide.md](docs/deployment-guide.md).
 
+## Verified Deployment Evidence
+
+The project has a screenshot evidence index at [screenshot.md](screenshot.md), with the detailed gallery in [screenshots/screenshots.md](screenshots/screenshots.md).
+
+Captured evidence covers:
+
+- Successful GitHub Actions deployment.
+- CloudFormation stack creation and completion.
+- Amazon Managed Grafana workspace availability.
+- Grafana dashboards in the `Platform Observability` folder.
+- Grafana alert rule, notification policy, and SNS contact point.
+- Native CloudWatch dashboard.
+- SNS topic and confirmed subscription.
+
 ## Quick Start
 
 Prerequisites:
 
 - IAM Identity Center enabled in the AWS account/region.
-- AWS CLI v2 configured locally, or GitHub Actions OIDC role configured in `vars.AWS_ROLE_ARN`.
+- AWS CLI v2 configured locally, or GitHub Actions OIDC role configured in `vars.AWS_ROLE_ARN`, `vars.aws_role_arn`, or `secrets.AWS_ROLE_ARN`.
 - A Grafana version available in the selected region. Confirm with `aws grafana list-versions --region us-east-1`.
+
+GitHub repository variables:
+
+```text
+AWS_REGION=us-east-1
+STACK_NAME=solvex-observability
+PARAMETER_FILE=infra/parameters/dev.json
+AWS_ROLE_ARN=arn:aws:iam::<account-id>:role/<github-actions-deploy-role>
+```
+
+The workflow also accepts `aws_role_arn` as the variable name, or `AWS_ROLE_ARN` as a repository secret.
 
 Validate local assets:
 
