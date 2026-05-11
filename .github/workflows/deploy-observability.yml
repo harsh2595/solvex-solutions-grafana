@@ -172,6 +172,7 @@ jobs:
               --output table || true
 
             aws cloudformation describe-events \
+              --stack-name "$STACK_NAME" \
               --change-set-name "$change_set_name" \
               --region "$AWS_REGION" \
               --filters FailedEvents=true \

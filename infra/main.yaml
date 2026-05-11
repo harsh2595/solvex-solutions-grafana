@@ -245,7 +245,9 @@ Resources:
     Type: AWS::Logs::LogGroup
     Condition: ShouldInstallPlugins
     Properties:
-      LogGroupName: !Sub "/aws/lambda/${ProjectName}-${EnvironmentName}-grafana-plugin-installer"
+      LogGroupName: !Sub
+        - "/aws/lambda/${ProjectName}-${EnvironmentName}-grafana-plugin-installer-${StackGuid}"
+        - StackGuid: !Select [2, !Split ["/", !Ref AWS::StackId]]
       RetentionInDays: 14
 
   PluginInstallerRole:
@@ -270,7 +272,9 @@ Resources:
                   - logs:CreateLogGroup
                   - logs:CreateLogStream
                   - logs:PutLogEvents
-                Resource: !Sub "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${ProjectName}-${EnvironmentName}-grafana-plugin-installer:*"
+                Resource: !Sub
+                  - "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${ProjectName}-${EnvironmentName}-grafana-plugin-installer-${StackGuid}:*"
+                  - StackGuid: !Select [2, !Split ["/", !Ref AWS::StackId]]
         - PolicyName: plugin-installer-grafana-api-token
           PolicyDocument:
             Version: "2012-10-17"
@@ -299,6 +303,8 @@ Resources:
       Environment:
         Variables:
           LOG_LEVEL: INFO
+      LoggingConfig:
+        LogGroup: !Ref PluginInstallerLogGroup
       Code:
         ZipFile: |
           import json
