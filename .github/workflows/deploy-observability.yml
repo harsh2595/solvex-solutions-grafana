@@ -143,6 +143,13 @@ jobs:
       - name: Show CloudFormation failure events
         if: failure()
         run: |
+          aws cloudformation describe-events \
+            --stack-name "$STACK_NAME" \
+            --region "$AWS_REGION" \
+            --filters FailedEvents=true \
+            --query "OperationEvents[0:30].[Timestamp,EventType,LogicalResourceId,ResourceType,ValidationName,ValidationStatus,ValidationPath,ValidationStatusReason,ResourceStatusReason]" \
+            --output table || true
+
           aws cloudformation describe-stack-events \
             --stack-name "$STACK_NAME" \
             --region "$AWS_REGION" \
