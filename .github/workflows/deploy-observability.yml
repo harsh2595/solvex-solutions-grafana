@@ -155,6 +155,30 @@ jobs:
             --query "Summaries[0:10].[ChangeSetName,Status,StatusReason,CreationTime]" \
             --output table || true
 
+          change_set_name="$(
+            aws cloudformation list-change-sets \
+              --stack-name "$STACK_NAME" \
+              --region "$AWS_REGION" \
+              --query "Summaries[0].ChangeSetName" \
+              --output text 2>/dev/null || true
+          )"
+
+          if [[ -n "$change_set_name" && "$change_set_name" != "None" ]]; then
+            aws cloudformation describe-change-set \
+              --stack-name "$STACK_NAME" \
+              --change-set-name "$change_set_name" \
+              --region "$AWS_REGION" \
+              --query "[ChangeSetName,Status,ExecutionStatus,StatusReason]" \
+              --output table || true
+
+            aws cloudformation describe-events \
+              --change-set-name "$change_set_name" \
+              --region "$AWS_REGION" \
+              --filters FailedEvents=true \
+              --query "OperationEvents[0:30].[Timestamp,EventType,LogicalResourceId,ResourceType,ValidationName,ValidationStatus,ValidationPath,ValidationStatusReason,ResourceStatusReason]" \
+              --output table || true
+          fi
+
           aws cloudformation describe-events \
             --stack-name "$STACK_NAME" \
             --region "$AWS_REGION" \
