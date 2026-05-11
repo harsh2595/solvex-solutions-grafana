@@ -1,0 +1,30 @@
+flowchart LR
+    Engineer[Engineer] -->|push / pull request| GitHub[GitHub Repository]
+    GitHub --> Actions[GitHub Actions]
+    Actions -->|OIDC assume role| DeployRole[AWS IAM Deploy Role]
+
+    subgraph AWS[AWS Account]
+        DeployRole --> CFN[CloudFormation Stacks]
+        CFN --> AMG[AWS Managed Grafana v12.4]
+        CFN --> WorkspaceRole[Grafana Workspace IAM Role]
+        CFN --> CWNative[CloudWatch Dashboard]
+        CFN --> SNSTopic[SNS Alert Topic]
+        CFN --> PluginLambda[Custom Resource Lambda]
+
+        PluginLambda -->|wait for ACTIVE workspace| AMG
+        PluginLambda -->|create short-lived service account token| AMGAPI[Grafana HTTP API]
+        PluginLambda -->|install allowlisted plugins| AMGAPI
+
+        Workloads[Cloud Workloads] -->|metrics / logs / alarms| CloudWatch[Amazon CloudWatch]
+        AMG -->|queries metrics / logs| CloudWatch
+        WorkspaceRole -->|allows CloudWatch read| CloudWatch
+        WorkspaceRole -->|allows SNS publish| SNSTopic
+
+        Actions -->|deploy dashboards / alerts| AMGAPI
+        AMGAPI --> GrafanaDashboards[Grafana Dashboards]
+        AMGAPI --> GrafanaAlerts[Alert Rules, Contact Points, Templates]
+        GrafanaAlerts -->|SNS contact point| SNSTopic
+        SNSTopic --> Subscribers[Email / Teams webhook bridge / Incident channel]
+    end
+
+    IAMIC[IAM Identity Center] -->|AWS_SSO authentication| AMG

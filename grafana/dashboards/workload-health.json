@@ -1,0 +1,232 @@
+{
+  "folderUid": "platform-observability",
+  "dashboard": {
+    "id": null,
+    "uid": "workload-health",
+    "title": "Workload Health",
+    "tags": [
+      "aws",
+      "workloads",
+      "slo"
+    ],
+    "timezone": "browser",
+    "schemaVersion": 39,
+    "version": 1,
+    "refresh": "1m",
+    "time": {
+      "from": "now-6h",
+      "to": "now"
+    },
+    "templating": {
+      "list": [
+        {
+          "name": "region",
+          "type": "constant",
+          "label": "Region",
+          "query": "${AWS_REGION}",
+          "current": {
+            "text": "${AWS_REGION}",
+            "value": "${AWS_REGION}"
+          }
+        }
+      ]
+    },
+    "annotations": {
+      "list": []
+    },
+    "panels": [
+      {
+        "id": 1,
+        "type": "stat",
+        "title": "Lambda Errors",
+        "datasource": {
+          "type": "cloudwatch",
+          "uid": "cloudwatch"
+        },
+        "gridPos": {
+          "x": 0,
+          "y": 0,
+          "w": 6,
+          "h": 5
+        },
+        "targets": [
+          {
+            "refId": "A",
+            "region": "$region",
+            "namespace": "AWS/Lambda",
+            "metricName": "Errors",
+            "dimensions": {},
+            "statistic": "Sum",
+            "period": "300",
+            "matchExact": false,
+            "queryMode": "Metrics",
+            "datasource": {
+              "type": "cloudwatch",
+              "uid": "cloudwatch"
+            }
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short",
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                },
+                {
+                  "color": "orange",
+                  "value": 1
+                },
+                {
+                  "color": "red",
+                  "value": 5
+                }
+              ]
+            }
+          },
+          "overrides": []
+        },
+        "options": {
+          "reduceOptions": {
+            "calcs": [
+              "sum"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "orientation": "auto",
+          "textMode": "auto"
+        }
+      },
+      {
+        "id": 2,
+        "type": "stat",
+        "title": "API Gateway 5xx",
+        "datasource": {
+          "type": "cloudwatch",
+          "uid": "cloudwatch"
+        },
+        "gridPos": {
+          "x": 6,
+          "y": 0,
+          "w": 6,
+          "h": 5
+        },
+        "targets": [
+          {
+            "refId": "A",
+            "region": "$region",
+            "namespace": "AWS/ApiGateway",
+            "metricName": "5XXError",
+            "dimensions": {},
+            "statistic": "Sum",
+            "period": "300",
+            "matchExact": false,
+            "queryMode": "Metrics",
+            "datasource": {
+              "type": "cloudwatch",
+              "uid": "cloudwatch"
+            }
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short",
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                },
+                {
+                  "color": "red",
+                  "value": 1
+                }
+              ]
+            }
+          },
+          "overrides": []
+        },
+        "options": {
+          "reduceOptions": {
+            "calcs": [
+              "sum"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "orientation": "auto",
+          "textMode": "auto"
+        }
+      },
+      {
+        "id": 3,
+        "type": "timeseries",
+        "title": "ECS CPU and Memory Utilization",
+        "datasource": {
+          "type": "cloudwatch",
+          "uid": "cloudwatch"
+        },
+        "gridPos": {
+          "x": 0,
+          "y": 5,
+          "w": 24,
+          "h": 8
+        },
+        "targets": [
+          {
+            "refId": "A",
+            "region": "$region",
+            "namespace": "AWS/ECS",
+            "metricName": "CPUUtilization",
+            "dimensions": {},
+            "statistic": "Average",
+            "period": "300",
+            "matchExact": false,
+            "queryMode": "Metrics",
+            "datasource": {
+              "type": "cloudwatch",
+              "uid": "cloudwatch"
+            }
+          },
+          {
+            "refId": "B",
+            "region": "$region",
+            "namespace": "AWS/ECS",
+            "metricName": "MemoryUtilization",
+            "dimensions": {},
+            "statistic": "Average",
+            "period": "300",
+            "matchExact": false,
+            "queryMode": "Metrics",
+            "datasource": {
+              "type": "cloudwatch",
+              "uid": "cloudwatch"
+            }
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percent",
+            "min": 0,
+            "max": 100
+          },
+          "overrides": []
+        },
+        "options": {
+          "legend": {
+            "displayMode": "list",
+            "placement": "bottom"
+          },
+          "tooltip": {
+            "mode": "multi"
+          }
+        }
+      }
+    ]
+  }
+}

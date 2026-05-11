@@ -1,0 +1,249 @@
+{
+  "folderUid": "platform-observability",
+  "dashboard": {
+    "id": null,
+    "uid": "cw-account-overview",
+    "title": "CloudWatch Account Overview",
+    "tags": [
+      "aws",
+      "cloudwatch",
+      "platform"
+    ],
+    "timezone": "browser",
+    "schemaVersion": 39,
+    "version": 1,
+    "refresh": "1m",
+    "time": {
+      "from": "now-3h",
+      "to": "now"
+    },
+    "templating": {
+      "list": [
+        {
+          "name": "region",
+          "type": "constant",
+          "label": "Region",
+          "query": "${AWS_REGION}",
+          "current": {
+            "text": "${AWS_REGION}",
+            "value": "${AWS_REGION}"
+          }
+        }
+      ]
+    },
+    "annotations": {
+      "list": []
+    },
+    "links": [
+      {
+        "title": "Alert Response Runbook",
+        "type": "link",
+        "url": "docs/runbooks/alert-response.md",
+        "targetBlank": true
+      }
+    ],
+    "panels": [
+      {
+        "id": 1,
+        "type": "timeseries",
+        "title": "Lambda Invocations",
+        "datasource": {
+          "type": "cloudwatch",
+          "uid": "cloudwatch"
+        },
+        "gridPos": {
+          "x": 0,
+          "y": 0,
+          "w": 12,
+          "h": 8
+        },
+        "targets": [
+          {
+            "refId": "A",
+            "region": "$region",
+            "namespace": "AWS/Lambda",
+            "metricName": "Invocations",
+            "dimensions": {},
+            "statistic": "Sum",
+            "period": "300",
+            "matchExact": false,
+            "queryMode": "Metrics",
+            "datasource": {
+              "type": "cloudwatch",
+              "uid": "cloudwatch"
+            }
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short"
+          },
+          "overrides": []
+        },
+        "options": {
+          "legend": {
+            "displayMode": "list",
+            "placement": "bottom"
+          },
+          "tooltip": {
+            "mode": "multi"
+          }
+        }
+      },
+      {
+        "id": 2,
+        "type": "timeseries",
+        "title": "Lambda Errors",
+        "datasource": {
+          "type": "cloudwatch",
+          "uid": "cloudwatch"
+        },
+        "gridPos": {
+          "x": 12,
+          "y": 0,
+          "w": 12,
+          "h": 8
+        },
+        "targets": [
+          {
+            "refId": "A",
+            "region": "$region",
+            "namespace": "AWS/Lambda",
+            "metricName": "Errors",
+            "dimensions": {},
+            "statistic": "Sum",
+            "period": "300",
+            "matchExact": false,
+            "queryMode": "Metrics",
+            "datasource": {
+              "type": "cloudwatch",
+              "uid": "cloudwatch"
+            }
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short",
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                },
+                {
+                  "color": "red",
+                  "value": 1
+                }
+              ]
+            }
+          },
+          "overrides": []
+        },
+        "options": {
+          "legend": {
+            "displayMode": "list",
+            "placement": "bottom"
+          },
+          "tooltip": {
+            "mode": "multi"
+          }
+        }
+      },
+      {
+        "id": 3,
+        "type": "timeseries",
+        "title": "API Gateway 5xx",
+        "datasource": {
+          "type": "cloudwatch",
+          "uid": "cloudwatch"
+        },
+        "gridPos": {
+          "x": 0,
+          "y": 8,
+          "w": 12,
+          "h": 8
+        },
+        "targets": [
+          {
+            "refId": "A",
+            "region": "$region",
+            "namespace": "AWS/ApiGateway",
+            "metricName": "5XXError",
+            "dimensions": {},
+            "statistic": "Sum",
+            "period": "300",
+            "matchExact": false,
+            "queryMode": "Metrics",
+            "datasource": {
+              "type": "cloudwatch",
+              "uid": "cloudwatch"
+            }
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short"
+          },
+          "overrides": []
+        },
+        "options": {
+          "legend": {
+            "displayMode": "list",
+            "placement": "bottom"
+          },
+          "tooltip": {
+            "mode": "multi"
+          }
+        }
+      },
+      {
+        "id": 4,
+        "type": "timeseries",
+        "title": "ALB Target 5xx",
+        "datasource": {
+          "type": "cloudwatch",
+          "uid": "cloudwatch"
+        },
+        "gridPos": {
+          "x": 12,
+          "y": 8,
+          "w": 12,
+          "h": 8
+        },
+        "targets": [
+          {
+            "refId": "A",
+            "region": "$region",
+            "namespace": "AWS/ApplicationELB",
+            "metricName": "HTTPCode_Target_5XX_Count",
+            "dimensions": {},
+            "statistic": "Sum",
+            "period": "300",
+            "matchExact": false,
+            "queryMode": "Metrics",
+            "datasource": {
+              "type": "cloudwatch",
+              "uid": "cloudwatch"
+            }
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short"
+          },
+          "overrides": []
+        },
+        "options": {
+          "legend": {
+            "displayMode": "list",
+            "placement": "bottom"
+          },
+          "tooltip": {
+            "mode": "multi"
+          }
+        }
+      }
+    ]
+  }
+}

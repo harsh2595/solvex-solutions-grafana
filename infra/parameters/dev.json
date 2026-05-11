@@ -1,0 +1,12 @@
+{
+  "ProjectName": "solvex-observability",
+  "EnvironmentName": "dev",
+  "GrafanaWorkspaceName": "solvex-observability",
+  "GrafanaVersion": "12.4",
+  "EnablePluginInstall": "true",
+  "AllowedPluginIds": "grafana-athena-datasource",
+  "PluginInstallerServiceAccountName": "cfn-plugin-installer",
+  "PluginInstallerTokenTtlSeconds": "3600",
+  "CloudWatchDashboardName": "solvex-observability-cloudwatch",
+  "SnsSubscriptionEmail": ""
+}

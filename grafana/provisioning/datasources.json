@@ -1,0 +1,14 @@
+[
+  {
+    "uid": "cloudwatch",
+    "name": "CloudWatch",
+    "type": "cloudwatch",
+    "access": "proxy",
+    "isDefault": true,
+    "jsonData": {
+      "authType": "default",
+      "defaultRegion": "${AWS_REGION}",
+      "customMetricsNamespaces": "AWS/Lambda,AWS/ApiGateway,AWS/ApplicationELB,AWS/ECS,ContainerInsights,AWS/Usage"
+    }
+  }
+]

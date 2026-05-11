@@ -1,0 +1,108 @@
+[
+  {
+    "folderUid": "platform-observability",
+    "name": "cloudwatch-platform-health",
+    "interval": 60,
+    "rules": [
+      {
+        "uid": "cw-lambda-errors",
+        "orgID": 1,
+        "folderUID": "platform-observability",
+        "ruleGroup": "cloudwatch-platform-health",
+        "title": "CloudWatch Lambda errors detected",
+        "condition": "B",
+        "data": [
+          {
+            "refId": "A",
+            "queryType": "",
+            "relativeTimeRange": {
+              "from": 600,
+              "to": 0
+            },
+            "datasourceUid": "cloudwatch",
+            "model": {
+              "datasource": {
+                "type": "cloudwatch",
+                "uid": "cloudwatch"
+              },
+              "dimensions": {},
+              "expression": "",
+              "id": "",
+              "matchExact": false,
+              "metricEditorMode": 0,
+              "metricName": "Errors",
+              "metricQueryType": 0,
+              "namespace": "AWS/Lambda",
+              "period": "300",
+              "queryMode": "Metrics",
+              "refId": "A",
+              "region": "${AWS_REGION}",
+              "statistic": "Sum"
+            }
+          },
+          {
+            "refId": "B",
+            "queryType": "",
+            "relativeTimeRange": {
+              "from": 0,
+              "to": 0
+            },
+            "datasourceUid": "__expr__",
+            "model": {
+              "conditions": [
+                {
+                  "evaluator": {
+                    "params": [
+                      1
+                    ],
+                    "type": "gt"
+                  },
+                  "operator": {
+                    "type": "and"
+                  },
+                  "query": {
+                    "params": [
+                      "A"
+                    ]
+                  },
+                  "reducer": {
+                    "params": [],
+                    "type": "sum"
+                  },
+                  "type": "query"
+                }
+              ],
+              "datasource": {
+                "type": "__expr__",
+                "uid": "__expr__"
+              },
+              "expression": "A",
+              "hide": false,
+              "intervalMs": 1000,
+              "maxDataPoints": 43200,
+              "refId": "B",
+              "type": "classic_conditions"
+            }
+          }
+        ],
+        "noDataState": "OK",
+        "execErrState": "Error",
+        "for": "5m",
+        "annotations": {
+          "summary": "One or more Lambda errors were detected in CloudWatch.",
+          "description": "CloudWatch reported Lambda Errors greater than the configured threshold for the last 10 minutes.",
+          "runbook_url": "docs/runbooks/alert-response.md",
+          "dashboard_url": "${GRAFANA_ENDPOINT}/d/cw-account-overview/cloudwatch-account-overview"
+        },
+        "labels": {
+          "alertname": "cloudwatch-lambda-errors",
+          "environment": "${ENVIRONMENT}",
+          "service": "lambda",
+          "severity": "warning",
+          "team": "platform"
+        },
+        "isPaused": false
+      }
+    ]
+  }
+]

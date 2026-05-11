@@ -1,0 +1,6 @@
+[
+  {
+    "name": "platform-observability",
+    "template": "{{ define \"platform-observability.message\" }}\nStatus: {{ .Status }}\nAlerts: {{ len .Alerts }}\n{{ range .Alerts }}\nAlert: {{ .Labels.alertname }}\nSeverity: {{ .Labels.severity }}\nService: {{ .Labels.service }}\nEnvironment: {{ .Labels.environment }}\nSummary: {{ .Annotations.summary }}\nRunbook: {{ .Annotations.runbook_url }}\nDashboard: {{ .Annotations.dashboard_url }}\n{{ end }}\n{{ end }}"
+  }
+]

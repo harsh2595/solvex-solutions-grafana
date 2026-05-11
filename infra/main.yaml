@@ -1,0 +1,516 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Single-account AWS Managed Grafana observability platform with CloudWatch, SNS, and plugin custom resource.
+
+Parameters:
+  ProjectName:
+    Type: String
+    Default: solvex-observability
+    Description: Short project name used in AWS resource names.
+    AllowedPattern: "^[a-zA-Z0-9-]+$"
+
+  EnvironmentName:
+    Type: String
+    Default: dev
+    Description: Environment label used in names, dashboards, and alert labels.
+    AllowedPattern: "^[a-zA-Z0-9-]+$"
+
+  GrafanaWorkspaceName:
+    Type: String
+    Default: solvex-observability
+    Description: AWS Managed Grafana workspace name.
+
+  GrafanaVersion:
+    Type: String
+    Default: "12.4"
+    Description: Grafana workspace version. Confirm available versions with aws grafana list-versions.
+
+  EnablePluginInstall:
+    Type: String
+    Default: "true"
+    AllowedValues:
+      - "true"
+      - "false"
+    Description: Whether the custom resource should install approved Grafana plugins.
+
+  AllowedPluginIds:
+    Type: String
+    Default: grafana-athena-datasource
+    Description: Comma-separated plugin IDs or plugin@version entries to install.
+
+  PluginInstallerServiceAccountName:
+    Type: String
+    Default: cfn-plugin-installer
+    Description: Grafana service account used by the plugin installer custom resource.
+
+  PluginInstallerTokenTtlSeconds:
+    Type: Number
+    Default: 3600
+    MinValue: 60
+    MaxValue: 2592000
+    Description: Time to live for the short-lived plugin installer service account token.
+
+  CloudWatchDashboardName:
+    Type: String
+    Default: solvex-observability-cloudwatch
+    Description: Name of the native CloudWatch dashboard.
+
+  SnsSubscriptionEmail:
+    Type: String
+    Default: ""
+    Description: Optional email address to subscribe to the SNS alert topic.
+
+Conditions:
+  ShouldInstallPlugins: !Equals [!Ref EnablePluginInstall, "true"]
+  HasSnsSubscriptionEmail: !Not [!Equals [!Ref SnsSubscriptionEmail, ""]]
+
+Resources:
+  AlertTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !Sub "${ProjectName}-${EnvironmentName}-grafana-alerts"
+      DisplayName: !Sub "${ProjectName} ${EnvironmentName} Grafana alerts"
+      Tags:
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: Environment
+          Value: !Ref EnvironmentName
+
+  AlertEmailSubscription:
+    Type: AWS::SNS::Subscription
+    Condition: HasSnsSubscriptionEmail
+    Properties:
+      Endpoint: !Ref SnsSubscriptionEmail
+      Protocol: email
+      TopicArn: !Ref AlertTopic
+
+  GrafanaWorkspaceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "${ProjectName}-${EnvironmentName}-grafana-workspace"
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: grafana.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - !Sub "arn:${AWS::Partition}:iam::aws:policy/service-role/AmazonGrafanaCloudWatchAccess"
+      Policies:
+        - PolicyName: publish-alerts-to-sns
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Sid: PublishGrafanaAlerts
+                Effect: Allow
+                Action:
+                  - sns:Publish
+                Resource: !Ref AlertTopic
+      Tags:
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: Environment
+          Value: !Ref EnvironmentName
+
+  GrafanaWorkspace:
+    Type: AWS::Grafana::Workspace
+    Properties:
+      AccountAccessType: CURRENT_ACCOUNT
+      AuthenticationProviders:
+        - AWS_SSO
+      Description: !Sub "Managed Grafana workspace for ${ProjectName} ${EnvironmentName} CloudWatch observability."
+      GrafanaVersion: !Ref GrafanaVersion
+      Name: !Sub "${GrafanaWorkspaceName}-${EnvironmentName}"
+      NotificationDestinations:
+        - SNS
+      PermissionType: CUSTOMER_MANAGED
+      PluginAdminEnabled: true
+      RoleArn: !GetAtt GrafanaWorkspaceRole.Arn
+
+  CloudWatchDashboard:
+    Type: AWS::CloudWatch::Dashboard
+    Properties:
+      DashboardName: !Ref CloudWatchDashboardName
+      DashboardBody: !Sub |
+        {
+          "start": "-PT3H",
+          "periodOverride": "inherit",
+          "widgets": [
+            {
+              "type": "text",
+              "x": 0,
+              "y": 0,
+              "width": 24,
+              "height": 2,
+              "properties": {
+                "markdown": "# ${ProjectName} ${EnvironmentName} CloudWatch Overview\nNative CloudWatch view for the Managed Grafana assessment. Grafana uses the same CloudWatch metrics through the workspace IAM role."
+              }
+            },
+            {
+              "type": "metric",
+              "x": 0,
+              "y": 2,
+              "width": 12,
+              "height": 6,
+              "properties": {
+                "region": "${AWS::Region}",
+                "title": "Lambda Invocations and Errors",
+                "view": "timeSeries",
+                "stacked": false,
+                "period": 300,
+                "stat": "Sum",
+                "metrics": [
+                  [ "AWS/Lambda", "Invocations", { "label": "Invocations", "id": "invocations", "visible": true } ],
+                  [ ".", "Errors", { "label": "Errors", "id": "errors", "visible": true } ],
+                  [ { "expression": "100 * errors / MAX([invocations,1])", "label": "Error %", "id": "error_rate", "yAxis": "right" } ]
+                ],
+                "yAxis": {
+                  "left": {
+                    "label": "Count"
+                  },
+                  "right": {
+                    "label": "Percent"
+                  }
+                }
+              }
+            },
+            {
+              "type": "metric",
+              "x": 12,
+              "y": 2,
+              "width": 12,
+              "height": 6,
+              "properties": {
+                "region": "${AWS::Region}",
+                "title": "API Gateway 4xx and 5xx",
+                "view": "timeSeries",
+                "stacked": false,
+                "period": 300,
+                "stat": "Sum",
+                "metrics": [
+                  [ "AWS/ApiGateway", "4XXError", { "label": "4xx", "id": "api4xx" } ],
+                  [ ".", "5XXError", { "label": "5xx", "id": "api5xx" } ]
+                ]
+              }
+            },
+            {
+              "type": "metric",
+              "x": 0,
+              "y": 8,
+              "width": 12,
+              "height": 6,
+              "properties": {
+                "region": "${AWS::Region}",
+                "title": "ALB Target 5xx",
+                "view": "timeSeries",
+                "stacked": false,
+                "period": 300,
+                "stat": "Sum",
+                "metrics": [
+                  [ "AWS/ApplicationELB", "HTTPCode_Target_5XX_Count", { "label": "Target 5xx" } ],
+                  [ ".", "HTTPCode_ELB_5XX_Count", { "label": "ELB 5xx" } ]
+                ]
+              }
+            },
+            {
+              "type": "metric",
+              "x": 12,
+              "y": 8,
+              "width": 12,
+              "height": 6,
+              "properties": {
+                "region": "${AWS::Region}",
+                "title": "ECS CPU and Memory Utilization",
+                "view": "timeSeries",
+                "stacked": false,
+                "period": 300,
+                "stat": "Average",
+                "metrics": [
+                  [ "AWS/ECS", "CPUUtilization", { "label": "CPU %" } ],
+                  [ ".", "MemoryUtilization", { "label": "Memory %" } ]
+                ],
+                "yAxis": {
+                  "left": {
+                    "min": 0,
+                    "max": 100,
+                    "label": "Percent"
+                  }
+                }
+              }
+            }
+          ]
+        }
+
+  PluginInstallerLogGroup:
+    Type: AWS::Logs::LogGroup
+    Condition: ShouldInstallPlugins
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${ProjectName}-${EnvironmentName}-grafana-plugin-installer"
+      RetentionInDays: 14
+
+  PluginInstallerRole:
+    Type: AWS::IAM::Role
+    Condition: ShouldInstallPlugins
+    Properties:
+      RoleName: !Sub "${ProjectName}-${EnvironmentName}-grafana-plugin-installer"
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: plugin-installer-logs
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: !Sub "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${ProjectName}-${EnvironmentName}-grafana-plugin-installer:*"
+        - PolicyName: plugin-installer-grafana-api-token
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - grafana:DescribeWorkspace
+                  - grafana:ListWorkspaceServiceAccounts
+                  - grafana:CreateWorkspaceServiceAccount
+                  - grafana:CreateWorkspaceServiceAccountToken
+                Resource: !Sub "arn:${AWS::Partition}:grafana:${AWS::Region}:${AWS::AccountId}:/workspaces/${GrafanaWorkspace}"
+
+  PluginInstallerFunction:
+    Type: AWS::Lambda::Function
+    Condition: ShouldInstallPlugins
+    DependsOn:
+      - PluginInstallerLogGroup
+    Properties:
+      FunctionName: !Sub "${ProjectName}-${EnvironmentName}-grafana-plugin-installer"
+      Description: Installs approved plugins into AWS Managed Grafana through a CloudFormation custom resource.
+      Runtime: python3.12
+      Handler: index.handler
+      Role: !GetAtt PluginInstallerRole.Arn
+      Timeout: 900
+      MemorySize: 256
+      Environment:
+        Variables:
+          LOG_LEVEL: INFO
+      Code:
+        ZipFile: |
+          import json
+          import logging
+          import os
+          import time
+          import urllib.error
+          import urllib.parse
+          import urllib.request
+
+          import boto3
+
+          LOG = logging.getLogger()
+          LOG.setLevel(os.getenv("LOG_LEVEL", "INFO"))
+
+
+          def send_response(event, context, status, data, reason=None, physical_id=None):
+              body = {
+                  "Status": status,
+                  "Reason": reason or f"See CloudWatch Logs: {context.log_stream_name}",
+                  "PhysicalResourceId": physical_id or event.get("PhysicalResourceId") or context.log_stream_name,
+                  "StackId": event["StackId"],
+                  "RequestId": event["RequestId"],
+                  "LogicalResourceId": event["LogicalResourceId"],
+                  "NoEcho": False,
+                  "Data": data,
+              }
+              payload = json.dumps(body).encode("utf-8")
+              request = urllib.request.Request(
+                  event["ResponseURL"],
+                  data=payload,
+                  method="PUT",
+                  headers={"content-type": "", "content-length": str(len(payload))},
+              )
+              with urllib.request.urlopen(request, timeout=20) as response:
+                  LOG.info("CloudFormation response status: %s", response.status)
+
+
+          def parse_plugins(value):
+              if isinstance(value, list):
+                  raw_plugins = value
+              else:
+                  raw_plugins = [item.strip() for item in str(value or "").split(",")]
+              plugins = []
+              for item in raw_plugins:
+                  if not item:
+                      continue
+                  if "@" in item:
+                      plugin_id, version = item.split("@", 1)
+                      plugins.append({"id": plugin_id.strip(), "version": version.strip()})
+                  else:
+                      plugins.append({"id": item.strip()})
+              return plugins
+
+
+          def wait_for_workspace(client, workspace_id):
+              for _ in range(60):
+                  workspace = client.describe_workspace(workspaceId=workspace_id)["workspace"]
+                  status = workspace["status"]
+                  LOG.info("Workspace %s status: %s", workspace_id, status)
+                  if status == "ACTIVE":
+                      return workspace
+                  if status.endswith("FAILED") or status == "DELETING":
+                      raise RuntimeError(f"Workspace {workspace_id} is {status}")
+                  time.sleep(10)
+              raise TimeoutError(f"Workspace {workspace_id} did not become ACTIVE within 10 minutes")
+
+
+          def find_or_create_service_account(client, workspace_id, name):
+              next_token = None
+              while True:
+                  kwargs = {"workspaceId": workspace_id, "maxResults": 100}
+                  if next_token:
+                      kwargs["nextToken"] = next_token
+                  response = client.list_workspace_service_accounts(**kwargs)
+                  for account in response.get("serviceAccounts", []):
+                      if account.get("name") == name and str(account.get("isDisabled", "false")).lower() != "true":
+                          return account["id"]
+                  next_token = response.get("nextToken")
+                  if not next_token:
+                      break
+              response = client.create_workspace_service_account(
+                  workspaceId=workspace_id,
+                  name=name,
+                  grafanaRole="ADMIN",
+              )
+              return response["id"]
+
+
+          def create_token(client, workspace_id, service_account_id, ttl_seconds, request_id):
+              response = client.create_workspace_service_account_token(
+                  workspaceId=workspace_id,
+                  serviceAccountId=service_account_id,
+                  name=f"cfn-plugin-install-{request_id[:8]}",
+                  secondsToLive=int(ttl_seconds),
+              )
+              return response["serviceAccountToken"]["key"]
+
+
+          def grafana_post(endpoint, token, path, payload):
+              endpoint = endpoint.rstrip("/")
+              url = f"{endpoint}{path}"
+              body = json.dumps(payload).encode("utf-8")
+              request = urllib.request.Request(
+                  url,
+                  data=body,
+                  method="POST",
+                  headers={
+                      "accept": "application/json",
+                      "content-type": "application/json",
+                      "authorization": f"Bearer {token}",
+                  },
+              )
+              try:
+                  with urllib.request.urlopen(request, timeout=60) as response:
+                      response.read()
+                      return response.status
+              except urllib.error.HTTPError as exc:
+                  text = exc.read().decode("utf-8", errors="replace")
+                  if exc.code in (200, 202, 409):
+                      return exc.code
+                  raise RuntimeError(f"Grafana API {path} failed with HTTP {exc.code}: {text}") from exc
+
+
+          def handler(event, context):
+              LOG.info("Event: %s", json.dumps({k: v for k, v in event.items() if k != "ResponseURL"}))
+              props = event.get("ResourceProperties", {})
+              workspace_id = props["WorkspaceId"]
+              physical_id = f"grafana-plugins-{workspace_id}"
+              try:
+                  if event["RequestType"] == "Delete":
+                      send_response(event, context, "SUCCESS", {"Message": "Delete does not uninstall plugins."}, physical_id=physical_id)
+                      return
+
+                  plugins = parse_plugins(props.get("PluginIds", ""))
+                  if not plugins:
+                      send_response(event, context, "SUCCESS", {"InstalledPlugins": []}, physical_id=physical_id)
+                      return
+
+                  client = boto3.client("grafana")
+                  workspace = wait_for_workspace(client, workspace_id)
+                  endpoint = props.get("WorkspaceEndpoint") or workspace["endpoint"]
+                  service_account_id = find_or_create_service_account(
+                      client,
+                      workspace_id,
+                      props.get("ServiceAccountName", "cfn-plugin-installer"),
+                  )
+                  token = create_token(
+                      client,
+                      workspace_id,
+                      service_account_id,
+                      props.get("TokenTtlSeconds", 3600),
+                      event["RequestId"],
+                  )
+
+                  installed = []
+                  for plugin in plugins:
+                      plugin_id = plugin["id"]
+                      payload = {}
+                      if plugin.get("version"):
+                          payload["version"] = plugin["version"]
+                      safe_id = urllib.parse.quote(plugin_id, safe="")
+                      status = grafana_post(endpoint, token, f"/api/plugins/{safe_id}/install", payload)
+                      installed.append({"id": plugin_id, "version": plugin.get("version", "latest-compatible"), "status": status})
+
+                  send_response(event, context, "SUCCESS", {"InstalledPlugins": installed}, physical_id=physical_id)
+              except Exception as exc:
+                  LOG.exception("Plugin installation failed")
+                  send_response(event, context, "FAILED", {"Error": str(exc)}, reason=str(exc), physical_id=physical_id)
+
+  GrafanaPluginInstaller:
+    Type: Custom::GrafanaPlugins
+    Condition: ShouldInstallPlugins
+    DependsOn:
+      - GrafanaWorkspace
+    Properties:
+      ServiceToken: !GetAtt PluginInstallerFunction.Arn
+      WorkspaceId: !Ref GrafanaWorkspace
+      WorkspaceEndpoint: !GetAtt GrafanaWorkspace.Endpoint
+      PluginIds: !Ref AllowedPluginIds
+      ServiceAccountName: !Ref PluginInstallerServiceAccountName
+      TokenTtlSeconds: !Ref PluginInstallerTokenTtlSeconds
+
+Outputs:
+  WorkspaceId:
+    Description: AWS Managed Grafana workspace ID.
+    Value: !Ref GrafanaWorkspace
+
+  WorkspaceEndpoint:
+    Description: AWS Managed Grafana workspace endpoint.
+    Value: !GetAtt GrafanaWorkspace.Endpoint
+
+  WorkspaceStatus:
+    Description: AWS Managed Grafana workspace status.
+    Value: !GetAtt GrafanaWorkspace.Status
+
+  GrafanaVersion:
+    Description: Grafana version deployed for the workspace.
+    Value: !GetAtt GrafanaWorkspace.GrafanaVersion
+
+  SsoClientId:
+    Description: IAM Identity Center client ID created for the workspace.
+    Value: !GetAtt GrafanaWorkspace.SsoClientId
+
+  SnsTopicArn:
+    Description: SNS topic ARN used by Grafana alert contact points.
+    Value: !Ref AlertTopic
+
+  CloudWatchDashboardName:
+    Description: Native CloudWatch dashboard name.
+    Value: !Ref CloudWatchDashboardName
+
+  GrafanaWorkspaceRoleArn:
+    Description: IAM role assumed by AWS Managed Grafana for data sources and SNS.
+    Value: !GetAtt GrafanaWorkspaceRole.Arn

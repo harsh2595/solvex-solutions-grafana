@@ -1,0 +1,2 @@
+# The Lambda implementation uses only the Python standard library and boto3.
+# boto3 is included in the AWS Lambda Python runtime.

@@ -1,0 +1,13 @@
+[
+  {
+    "uid": "sns-platform-alerts",
+    "name": "platform-sns",
+    "type": "sns",
+    "disableResolveMessage": false,
+    "settings": {
+      "topic_arn": "${SNS_TOPIC_ARN}",
+      "subject": "[{{ .Status | toUpper }}] {{ .CommonLabels.alertname }} - {{ .CommonLabels.environment }}",
+      "body": "{{ template \"platform-observability.message\" . }}"
+    }
+  }
+]

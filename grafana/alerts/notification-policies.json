@@ -1,0 +1,39 @@
+{
+  "receiver": "platform-sns",
+  "group_by": [
+    "alertname",
+    "service",
+    "environment"
+  ],
+  "group_wait": "30s",
+  "group_interval": "5m",
+  "repeat_interval": "4h",
+  "routes": [
+    {
+      "receiver": "platform-sns",
+      "object_matchers": [
+        [
+          "severity",
+          "=",
+          "critical"
+        ]
+      ],
+      "group_wait": "10s",
+      "group_interval": "2m",
+      "repeat_interval": "1h"
+    },
+    {
+      "receiver": "platform-sns",
+      "object_matchers": [
+        [
+          "team",
+          "=",
+          "platform"
+        ]
+      ],
+      "group_wait": "30s",
+      "group_interval": "5m",
+      "repeat_interval": "4h"
+    }
+  ]
+}

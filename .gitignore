@@ -1,0 +1,13 @@
+.env
+.env.*
+*.log
+*.pyc
+__pycache__/
+.pytest_cache/
+.aws-sam/
+.venv/
+node_modules/
+dist/
+build/
+tmp/
+stack-outputs.json
