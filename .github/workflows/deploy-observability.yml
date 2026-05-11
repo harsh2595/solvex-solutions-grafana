@@ -128,6 +128,12 @@ jobs:
             exit 1
           fi
 
+          if [[ "$stack_status" == "REVIEW_IN_PROGRESS" ]]; then
+            echo "Stack $STACK_NAME is REVIEW_IN_PROGRESS from a failed change set."
+            echo "Delete the incomplete stack in CloudFormation, then rerun this workflow."
+            exit 1
+          fi
+
           echo "Stack $STACK_NAME status is $stack_status; continuing."
 
       - name: Deploy CloudFormation stack
@@ -143,6 +149,12 @@ jobs:
       - name: Show CloudFormation failure events
         if: failure()
         run: |
+          aws cloudformation list-change-sets \
+            --stack-name "$STACK_NAME" \
+            --region "$AWS_REGION" \
+            --query "Summaries[0:10].[ChangeSetName,Status,StatusReason,CreationTime]" \
+            --output table || true
+
           aws cloudformation describe-events \
             --stack-name "$STACK_NAME" \
             --region "$AWS_REGION" \
