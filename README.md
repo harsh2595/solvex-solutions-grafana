@@ -4,7 +4,7 @@ Runnable single-account AWS observability platform using **AWS Managed Grafana**
 
 The project is designed for the Grafana Engineer assessment:
 
-- Provision AWS Managed Grafana with IAM Identity Center SSO.
+- Provision AWS Managed Grafanaa with IAM Identity Center SSO.
 - Enable plugin administration and install approved plugins through a CloudFormation custom resource.
 - Build a CloudWatch observability baseline.
 - Deploy CloudWatch and Grafana dashboards.
