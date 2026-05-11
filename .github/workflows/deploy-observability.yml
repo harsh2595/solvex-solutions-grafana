@@ -242,6 +242,33 @@ jobs:
           role-to-assume: ${{ vars.AWS_ROLE_ARN || vars.aws_role_arn || secrets.AWS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
 
+      - name: Wait for Grafana workspace to become active
+        run: |
+          for attempt in {1..60}; do
+            status="$(
+              aws grafana describe-workspace \
+                --workspace-id "$WORKSPACE_ID" \
+                --region "$AWS_REGION" \
+                --query "workspace.status" \
+                --output text
+            )"
+            echo "Workspace $WORKSPACE_ID status: $status"
+
+            if [[ "$status" == "ACTIVE" ]]; then
+              exit 0
+            fi
+
+            if [[ "$status" == "CREATION_FAILED" || "$status" == "UPDATE_FAILED" || "$status" == "DELETION_FAILED" || "$status" == "DELETING" ]]; then
+              echo "Workspace $WORKSPACE_ID reached terminal status: $status"
+              exit 1
+            fi
+
+            sleep 10
+          done
+
+          echo "Workspace $WORKSPACE_ID did not become ACTIVE within 10 minutes."
+          exit 1
+
       - name: Create short-lived Grafana service account token
         run: |
           token="$(
