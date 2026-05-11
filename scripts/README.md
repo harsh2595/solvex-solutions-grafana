@@ -15,7 +15,7 @@ scripts/
 ## Responsibilities
 
 - `ensure-service-account-token.sh`: creates or locates a Grafana service account and mints a short-lived token through AWS Managed Grafana APIs.
-- `deploy-grafana-assets.py`: applies folders, data sources, dashboards, notification templates, contact points, policies, and alert rules.
+- `deploy-grafana-assets.py`: appliees folders, data sources, dashboards, notification templates, contact points, policies, and alert rules.
 - `smoke-test.py`: validates stack outputs, AWS Managed Grafana health, CloudWatch dashboard, SNS topic, data source, dashboards, contact points, templates, and alert rules.
 - `validate-json.sh`: checks dashboard and alert JSON before deployment.
 
